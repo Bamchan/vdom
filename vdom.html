@@ -9,6 +9,16 @@
 </head>
 
 <body>
+    <div id="template">
+        模板结构
+        <ul>
+            <li>1</li>
+            <li>2</li>
+            <li>3</li>
+            <li>4</li>
+            <li>5</li>
+        </ul>
+    </div>
     <script>
         class CreateEl {
             constructor(tagName, props, children) {
@@ -50,41 +60,38 @@
                 let childEl = (child instanceof CreateEl) ? child.render() : document.createTextNode(child)
                 el.appendChild(childEl)
             })
-            console.log(el);
             return el
         }
         let createElement = (tagName, props, children) => {
             return new CreateEl(tagName, props, children)
         }
-        let a = createElement('ul', {
-            id: 'ol-list'
-        }, [
-            createElement('li', {
-                class: 'item1',
-                style: "list-style: none"
-            }, ['Item1']),
-            createElement('li', {
-                class: 'item2',
-                id: 'li2',
-                style: "color: pink",
-                onclick: 'printStr ()'
-            }, ['Item2']),
-            createElement('li', {
-                class: 'item3',
-            }, [createElement('li', {
-                class: 'item3-1',
-                color: 'orange'
-            }, ['item3-1']), createElement('li', {
-                class: 'item3-2',
-                color: 'yellow'
-            }, ['item3-2'])])
-        ]).render()
-        // 供事件绑定的方法
-        function printStr() {
-            alert('虚拟dom')
+        // 将dom树节点劫持到对象中中进行解析
+        function nodeToObject(vnode) {
+            let parseProps = {}
+            // 定义一个parseProps接收节点属性
+            for (let [key, val] of Object.entries(vnode.attributes)) {
+                parseProps[val.name] = val.value
+            }
+            let dealChildren = []
+            // 定义一个数组接收节点的所有子节点，对于元素则递归调用nodeToObject方法
+            let parsrChildren = Array.from(vnode.childNodes)
+            parsrChildren.forEach((ele) => {
+                if (ele instanceof Element) {
+                    dealChildren.push(nodeToObject(ele))
+                } else {
+                    dealChildren.push(ele.nodeValue)
+                }
+            })
+            let flag = {
+                tag: vnode.tagName.toLowerCase(),
+                props: parseProps,
+                children: dealChildren
+            }
+            // 返回一个虚拟Dom Tree
+            return createElement(flag.tag, flag.props, flag.children)
         }
-        // 将DOM元素渲染到浏览器上
-        document.body.appendChild(a)
+        let AST = nodeToObject(document.getElementById('template')).render();
+        document.body.appendChild(AST);
     </script>
 </body>
 
