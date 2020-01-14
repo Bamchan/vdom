@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        class CreateEl {
+            constructor(tagName, props, children) {
+                // 当只有两个参数tagName和children的时候，例如 celement(el, [123]) 做容错处理
+                if (Array.isArray(props)) {
+                    children = props
+                    props = {}
+                }
+                // tagName, props, children数据保存到this实例化对象上
+                this.tagName = tagName
+                this.props = props || {}
+                this.children = children || []
+                this.key = props ? props.key : undefined // 对于Vue的v-for，react的map循环，加key可以提高diff效率
+                // 定义count在diff算法使用
+                let count = 0
+                this.children.forEach(child => {
+                    if (child instanceof CreateEl) {
+                        count += child.count
+                    } else {
+                        child = '' + child
+                    }
+                    count++
+                })
+                // 给每一个节点设置一个count
+                this.count = count
+            }
+        }
+        // 构建一个 dom 树
+        CreateEl.prototype.render = function () {
+            // 创建dom
+            const el = document.createElement(this.tagName)
+            const props = this.props
+            // 循环所有属性，然后设置属性
+            for (let [key, val] of Object.entries(props)) {
+                el.setAttribute(key, val)
+            }
+            this.children.forEach(child => {
+                // 递归循环 构建dom tree,递归的终止条件：子节点为文本节点
+                let childEl = (child instanceof CreateEl) ? child.render() : document.createTextNode(child)
+                el.appendChild(childEl)
+            })
+            console.log(el);
+            return el
+        }
+        let createElement = (tagName, props, children) => {
+            return new CreateEl(tagName, props, children)
+        }
+        let a = createElement('ul', {
+            id: 'ol-list'
+        }, [
+            createElement('li', {
+                class: 'item1',
+                style: "list-style: none"
+            }, ['Item1']),
+            createElement('li', {
+                class: 'item2',
+                id: 'li2',
+                style: "color: pink",
+                onclick: 'printStr ()'
+            }, ['Item2']),
+            createElement('li', {
+                class: 'item3',
+            }, [createElement('li', {
+                class: 'item3-1',
+                color: 'orange'
+            }, ['item3-1']), createElement('li', {
+                class: 'item3-2',
+                color: 'yellow'
+            }, ['item3-2'])])
+        ]).render()
+        // 供事件绑定的方法
+        function printStr() {
+            alert('虚拟dom')
+        }
+        // 将DOM元素渲染到浏览器上
+        document.body.appendChild(a)
+    </script>
+</body>
+
+</html>
